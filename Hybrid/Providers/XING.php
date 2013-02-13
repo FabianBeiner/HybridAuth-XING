@@ -9,7 +9,7 @@
  * XING.com Provider
  *
  * @author  Fabian Beiner <mail@fabian-beiner.de>
- * @version 1.0beta
+ * @version 1.0.1
  */
 class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1 {
     /**
@@ -141,7 +141,7 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1 {
                 $this->user->profile->webSiteURL = (property_exists($oResponse->web_profiles, 'blog')) ? $oResponse->web_profiles->blog[0] : null;
             }
             if (null === $this->user->profile->webSiteURL) {
-                $this->user->profile->webSiteURL = (property_exists($oResponse->web_profiles, 'other')) ? $oResponse->web_profiles->blog[0] : null;
+                $this->user->profile->webSiteURL = (property_exists($oResponse->web_profiles, 'other')) ? $oResponse->web_profiles->other[0] : null;
             }
             // Just use *anything*!
             if (null === $this->user->profile->webSiteURL) {
@@ -285,7 +285,7 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1 {
                     $oContact->webSiteURL = (property_exists($aTitle->web_profiles, 'blog')) ? $aTitle->web_profiles->blog[0] : null;
                 }
                 if (null === $oContact->webSiteURL) {
-                    $oContact->webSiteURL = (property_exists($aTitle->web_profiles, 'other')) ? $aTitle->web_profiles->blog[0] : null;
+                    $oContact->webSiteURL = (property_exists($aTitle->web_profiles, 'other')) ? $aTitle->web_profiles->other[0] : null;
                 }
                 // Just use *anything*!
                 if (null === $oContact->webSiteURL) {
