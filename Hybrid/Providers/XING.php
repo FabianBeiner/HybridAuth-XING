@@ -251,6 +251,17 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1 {
     function getUserContacts() {
         try {
             $oResponse = $this->api->get('users/me/contacts?limit=100&user_fields=id,display_name,permalink,web_profiles,photo_urls,display_name,interests,active_email&offset=0');
+
+            // The HTTP status code needs to be 200 here. If it's not, something is wrong.
+            if ($this->api->http_code !== 200) {
+                throw new Exception('User Contact request failed! ' . $this->providerId . ' API returned an error: ' . $this->errorMessageByStatus($this->api->http_code) . '.');
+            }
+
+            // We should have an object by now.
+            if (!is_object($oResponse)) {
+                throw new Exception('User Contact request failed! ' . $this->providerId . ' API returned an error: invalid response.');
+            }
+
             $oTotal    = $oResponse->contacts->users;
             $iTotal    = $oResponse->contacts->total;
 
