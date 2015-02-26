@@ -1,10 +1,10 @@
 # HybridAuth provider for the XING.com API
 
-*Tested with HybridAuth 2.1.1-dev.*
+*Tested with HybridAuth 2.1.1-dev and 2.4.0-dev.*
 
 ## Requirements
 
-Get the latest version *(>= 2.1.1-dev)* of **HybridAuth** from [github.com/hybridauth/hybridauth](https://github.com/hybridauth/hybridauth).
+Get the latest version *(>= 2.4.0-dev)* of **HybridAuth** from [github.com/hybridauth/hybridauth](https://github.com/hybridauth/hybridauth).
 
 ## Quick Start
 
