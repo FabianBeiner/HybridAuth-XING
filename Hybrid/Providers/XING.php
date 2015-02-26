@@ -254,7 +254,7 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1 {
 
             // The HTTP status code needs to be 200 here. If it's not, something is wrong.
             if ($this->api->http_code !== 200) {
-                throw new Exception('User Contact request failed! ' . $this->providerId . ' API returned an error: ' . $this->errorMessageByStatus($this->api->http_code) . '.');
+                throw new Exception('User Contact request failed! ' . $this->providerId . ' API returned an error: ' . $this->errorMessageByStatus($this->api->http_code) . '.', $this->api->http_code);
             }
 
             // We should have an object by now.
@@ -271,7 +271,7 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1 {
             }
         }
         catch(Exception $e) {
-            throw new Exception('Could not fetch contacts. ' . $this->providerId . ' returned an error: ' . $e . '.');
+            throw new Exception('Could not fetch contacts. ' . $this->providerId . ' returned an error: ' . $e . '.', $e->getCode());
         }
 
         // Return empty array if there are no contacts.
