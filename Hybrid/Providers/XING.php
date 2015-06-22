@@ -315,4 +315,33 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
 
         return $aContacts;
     }
+
+    /**
+     * Get contact count
+     *
+     * @see https://dev.xing.com/docs/get/users/:user_id/contacts
+     *
+     * @param string $xingId The XING-ID of the user
+     * @return int the number of contacts
+     * @throws Exception
+     */
+    function getUserContactCount($xingId)
+    {
+        try {
+            $oResponse = $this->api->get('users/'. $xingId .'/contacts?limit=0');
+            // The HTTP status code needs to be 200 here. If it's not, something is wrong.
+            if ($this->api->http_code !== 200) {
+                throw new Exception('User Contact count request failed! ' . $this->providerId . ' API returned an error: ' . $this->errorMessageByStatus($this->api->http_code) . '.', $this->api->http_code);
+            }
+
+            // We should have an object by now.
+            if (!is_object($oResponse)) {
+                throw new Exception('User Contact count request failed! ' . $this->providerId . ' API returned an error: invalid response.');
+            }
+            return $oResponse->contacts->total;
+        } catch (Exception $e) {
+            throw new Exception('Could not fetch Contact count. ' . $this->providerId . ' returned an error: ' . $e . '.', $e->getCode());
+        }
+    }
+
 }
