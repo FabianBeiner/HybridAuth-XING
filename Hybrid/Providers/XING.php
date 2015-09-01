@@ -23,8 +23,6 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
 
         parent::initialize();
 
-        require_once dirname(__FILE__) . '/XINGUser.php';
-
         // XING API endpoints.
         $this->api->api_base_url      = 'https://api.xing.com/v1/';
         $this->api->authorize_url     = 'https://api.xing.com/v1/authorize';
@@ -360,6 +358,8 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
      */
     public function findUsersByEmail( $emails, $isUserExisting = true )
     {
+        require_once 'XINGUser.php';
+
         $user_fields_string = XingUser::getApiRequestFields();
 
         $aParameters = array(
@@ -368,13 +368,13 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
         );
 
         $found_users = array();
-        //each email seach request has a limit of 100 emails
+        //each email search request has a limit of 100 emails
         $all_emails_chunks = array_chunk( $emails, 100 );
+        $requestEndpoint = 'users/find_by_emails';
         foreach ($all_emails_chunks as $single_emails_chunk) {
             $aParameters[ 'emails' ] = implode( ',', $single_emails_chunk );
-            $oResponse = $this->api->get( 'users/find_by_emails', $aParameters );
-
-            $this->verifyResponse( 'find_by_emails', $this->api->http_code, $oResponse );
+            $oResponse = $this->api->get( $requestEndpoint, $aParameters );
+            $this->verifyResponse( $requestEndpoint, $this->api->http_code, $oResponse );
 
             // parse response
             foreach ($oResponse->results->items as $item) {
@@ -398,9 +398,51 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
         return $found_users;
     }
 
+    /**
+     * Find jobs by a given criteria
+     *
+     * @see https://dev.xing.com/docs/get/jobs/find
+     *
+     * @param string $query the search query
+     * @param int $limit Restrict the number of job postings to be returned. This must be a positive number. Default: 10
+     * @param XingJobLocation $location A geo coordinate in the format latitude, longitude, radius. Radius is specified in kilometers. Example: “51.1084,13.6737,100”
+     * @param int $offset used for paginating results
+     * @return [XingJob[], jobs found count] the associative array with jobs and job-id as key and the total of jobs found for the query
+     *         [can be used for pagination the results]
+     * @throws Exception
+     */
+    public function findJobsByQuery( $query, $limit = 10, XingJobLocation $location = null, $offset = 0 )
+    {
+        if (!isset( $query ) || empty( $query )) {
+            throw new Exception( 'A query is required for Job Searching' );
+        }
+
+        require_once 'XINGJob.php';
+
+        $aParameters = array(
+            'oauth_token' => $this->token( 'access_token' ),
+            'query' => $query,
+        );
+
+        $requestEndpoint = 'jobs/find';
+        $found_jobs = array();
+        $oResponse = $this->api->get( $requestEndpoint, $aParameters );
+        $this->verifyResponse( $requestEndpoint, $this->api->http_code, $oResponse );
+
+        // parse response
+        $found_jobs_count = $oResponse->jobs->total;
+        foreach ($oResponse->jobs->items as $item) {
+            $job_id = $item->id;
+            $job = new XingJob( $item );
+            $found_jobs[ $job_id ] = $job;
+        }
+
+        return array( $found_jobs, $found_jobs_count );
+    }
+
     private function verifyResponse( $requestName, $http_code, $oResponse )
     {
-        // The HTTP status code needs to be 200 here. If it's not, something is wrong.
+        // The HTTP status code needs to be 200 here. Otherwise something is wrong.
         if ($this->api->http_code !== 200) {
             throw new Exception(
                 $requestName . ' request failed! ' . $this->providerId . ' API returned an error: ' . $this->errorMessageByStatus( $http_code ) . '.'

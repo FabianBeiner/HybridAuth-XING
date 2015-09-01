@@ -1,4 +1,5 @@
 <?php
+
 /**
  * XingUser - basic XING user profile
  *
@@ -54,7 +55,7 @@ class XingUser extends Hybrid_User_Contact
                     }
 
                     if (property_exists( $oResponse, $apiFieldNameItemParent )) {
-                        if (( $apiFieldNameItemChild ==='*' ) && ( count( get_object_vars( $oResponse->$apiFieldNameItemParent ) ) > 0 )) {
+                        if (( $apiFieldNameItemChild === '*' ) && ( count( get_object_vars( $oResponse->$apiFieldNameItemParent ) ) > 0 )) {
                             // anything is valid then
                             foreach (array_values( get_object_vars( $oResponse->$apiFieldNameItemParent ) ) as $itemChildValue) {
                                 if ($itemChildValue != null) {
