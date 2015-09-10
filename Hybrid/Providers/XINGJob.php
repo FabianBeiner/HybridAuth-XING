@@ -4,10 +4,10 @@
  * XingJob - XING Job listing
  *
  */
+
 class XingJob
 {
-
-    // these is the list of fields that are/can be returned from the api
+    // these is the list of all the fields that are/can be returned from the api
     public $id;
     public $location = array(
         'geo_code' => array(

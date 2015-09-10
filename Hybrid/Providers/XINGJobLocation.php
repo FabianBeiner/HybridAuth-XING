@@ -29,8 +29,7 @@ class XingJobLocation
         $this->radius = $radius;
     }
 
-    public function __toString()
-    {
+    public function __toString() {
         return implode( ',', array( $this->lat, $this->lon, $this->radius ) );
     }
 }
