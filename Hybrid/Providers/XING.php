@@ -36,6 +36,9 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
 
         // We don't need them.
         $this->api->curl_auth_header = false;
+
+        // allows to specify which picture size to retrieve
+        require_once( 'XINGUserPictureSize.php' );
     }
 
     /**
@@ -153,9 +156,10 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
             }
         }
 
-        // We use the largest picture available.
-        if (property_exists($oResponse, 'photo_urls') && property_exists($oResponse->photo_urls, 'large')) {
-            $this->user->profile->photoURL = (property_exists($oResponse->photo_urls, 'large')) ? $oResponse->photo_urls->large : '';
+        // We use the '192x192' picture available.
+        $requestedPictureSize = XingUserPicureSize::SIZE_192X192;
+        if (property_exists($oResponse, 'photo_urls') && property_exists($oResponse->photo_urls, $requestedPictureSize )) {
+            $this->user->profile->photoURL = (property_exists($oResponse->photo_urls, $requestedPictureSize )) ? $oResponse->photo_urls->$requestedPictureSize  : '';
         }
 
         // Try to get the native language first.
@@ -246,76 +250,47 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
      * Load user contacts.
      *
      * @see http://hybridauth.sourceforge.net/userguide/Profile_Data_User_Contacts.html
-     * @return Hybrid_User_Contact[]
+     *
+     * @param string $xingUserPicureSize the requested size of picture to return
+     * @return XingUser[]
      * @throws Exception
      */
-    function getUserContacts() {
-        try {
-            $oResponse = $this->api->get('users/me/contacts?limit=100&user_fields=id,display_name,permalink,web_profiles,photo_urls,display_name,interests,active_email&offset=0');
+    function getUserContacts(  $xingUserPicureSize = null) {
+        require_once 'XINGUser.php';
+        $user_fields_string = XingUser::getApiRequestFields();
 
-            // The HTTP status code needs to be 200 here. If it's not, something is wrong.
-            if ($this->api->http_code !== 200) {
-                throw new Exception('User Contact request failed! ' . $this->providerId . ' API returned an error: ' . $this->errorMessageByStatus($this->api->http_code) . '.', $this->api->http_code);
-            }
+        $requestParameters = array(
+            'user_fields' => $user_fields_string,
+            'order_by' => 'last_name',
+            'limit' => 100,
+            'offset' => 0,
+        );
 
-            // We should have an object by now.
-            if (!is_object($oResponse)) {
-                throw new Exception('User Contact request failed! ' . $this->providerId . ' API returned an error: invalid response.');
-            }
+        $requestEndpoint = 'users/me/contacts';
+        $apiResponse = $this->api->get('users/me/contacts', $requestParameters);
+        $this->verifyResponse($requestEndpoint, $this->api->http_code, $apiResponse);
 
-            $oTotal = $oResponse->contacts->users;
-            $iTotal = $oResponse->contacts->total;
+        $apiContacts = $apiResponse->contacts->users;
+        $contactsCount = $apiResponse->contacts->total;
 
-            for ($i = 100; $i <= $iTotal; $i = $i + 100) {
-                $oResponse = $this->api->get('users/me/contacts?limit=100&user_fields=id,display_name,permalink,web_profiles,photo_urls,display_name,interests,active_email&offset=' . $i);
-                $oTotal    = array_merge($oTotal, $oResponse->contacts->users);
-            }
-        } catch (Exception $e) {
-            throw new Exception('Could not fetch contacts. ' . $this->providerId . ' returned an error: ' . $e . '.', $e->getCode());
+        for ($offset = 100; $offset <= $contactsCount; $offset += 100) {
+            $requestParameters['offset'] = $offset;
+            $apiResponse = $this->api->get($requestEndpoint.$requestParameters);
+            $apiContacts = array_merge($apiContacts, $apiResponse->contacts->users);
         }
 
         // Return empty array if there are no contacts.
-        if (count($oTotal) == 0) {
+        if (count($apiContacts) == 0) {
             return array();
         }
 
         // Create the contacts array.
-        $aContacts = array();
-        foreach ($oTotal as $aTitle) {
-            $oContact              = new Hybrid_User_Contact();
-            $oContact->identifier  = (property_exists($aTitle, 'id')) ? $aTitle->id : '';
-            $oContact->profileURL  = (property_exists($aTitle, 'permalink')) ? $aTitle->permalink : '';
-            $oContact->displayName = (property_exists($aTitle, 'display_name')) ? $aTitle->display_name : '';
-            $oContact->description = (property_exists($aTitle, 'interests')) ? $aTitle->interests : '';
-            $oContact->email       = (property_exists($aTitle, 'active_email')) ? $aTitle->active_email : '';
-
-            // My own priority: Homepage, blog, other, something else.
-            if (property_exists($aTitle, 'web_profiles')) {
-                $oContact->webSiteURL = (property_exists($aTitle->web_profiles, 'homepage')) ? $aTitle->web_profiles->homepage[0] : null;
-                if (null === $oContact->webSiteURL) {
-                    $oContact->webSiteURL = (property_exists($aTitle->web_profiles, 'blog')) ? $aTitle->web_profiles->blog[0] : null;
-                }
-                if (null === $oContact->webSiteURL) {
-                    $oContact->webSiteURL = (property_exists($aTitle->web_profiles, 'other')) ? $aTitle->web_profiles->other[0] : null;
-                }
-                // Just use *anything*!
-                if (null === $oContact->webSiteURL) {
-                    foreach ($aTitle->web_profiles as $aUrl) {
-                        $oContact->webSiteURL = $aUrl[0];
-                        break;
-                    }
-                }
-            }
-
-            // We use the largest picture available.
-            if (property_exists($aTitle, 'photo_urls') && property_exists($aTitle->photo_urls, 'large')) {
-                $oContact->photoURL = (property_exists($aTitle->photo_urls, 'large')) ? $aTitle->photo_urls->large : '';
-            }
-
-            $aContacts[] = $oContact;
+        $myContacts = array();
+        foreach ($apiContacts as $apiUser) {
+            $myContacts[] = new XingUser($apiUser, $xingUserPicureSize);
         }
 
-        return $aContacts;
+        return $myContacts;
     }
 
     /**
@@ -359,11 +334,9 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
     public function findUsersByEmail( $emails, $isUserExisting = true )
     {
         require_once 'XINGUser.php';
-
         $user_fields_string = XingUser::getApiRequestFields();
 
         $aParameters = array(
-            'oauth_token' => $this->token( 'access_token' ),
             'user_fields' => $user_fields_string,
         );
 
@@ -411,7 +384,9 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
      *         [can be used for pagination the results]
      * @throws Exception
      */
-    public function findJobsByQuery( $query, $limit = 10, XingJobLocation $location = null, $offset = 0 )
+
+    //todo still to implement limit and location processing
+    public function findJobsByQuery( $query, /*$limit = 10,  XingJobLocation $location = null,*/ $offset = 0 )
     {
         if (!isset( $query ) || empty( $query )) {
             throw new Exception( 'A query is required for Job Searching' );
@@ -420,8 +395,8 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
         require_once 'XINGJob.php';
 
         $aParameters = array(
-            'oauth_token' => $this->token( 'access_token' ),
             'query' => $query,
+            'offset' => $offset,
         );
 
         $requestEndpoint = 'jobs/find';
