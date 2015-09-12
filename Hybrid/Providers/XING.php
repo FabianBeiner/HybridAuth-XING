@@ -255,7 +255,7 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
      * @return XingUser[]
      * @throws Exception
      */
-    function getUserContacts(  $xingUserPicureSize = null) {
+    function getUserContacts( $xingUserPicureSize = null ) {
         require_once 'XINGUser.php';
         $user_fields_string = XingUser::getApiRequestFields();
 
@@ -327,11 +327,12 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
      * @see https://dev.xing.com/docs/get/users/find_by_emails
      *
      * @param array $emails the list of emails that will be searched in XING
+     * @param string $xingUserPicureSize the requested size of picture to return
      * @param boolean $isUserExisting collect only user that have an accessible XING profile
-     * @return XingUser[] the associative array with emails as key
+     * @return array [string email, XingUser] the associative array with emails as key
      * @throws Exception
      */
-    public function findUsersByEmail( $emails, $isUserExisting = true )
+    public function findUsersByEmail( $emails, $xingUserPicureSize = null, $isUserExisting = true )
     {
         require_once 'XINGUser.php';
         $user_fields_string = XingUser::getApiRequestFields();
@@ -357,7 +358,7 @@ class Hybrid_Providers_XING extends Hybrid_Provider_Model_OAuth1
                     // valid user
                     if (property_exists( $item->user, 'id' ) && $item->user->id != null) {
                         // if id is null then the user is inactive or something wrong anyway
-                        $user = new XingUser( $item->user );
+                        $user = new XingUser( $item->user, $xingUserPicureSize );
                     }
                 }
 

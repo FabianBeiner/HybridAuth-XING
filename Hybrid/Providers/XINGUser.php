@@ -36,11 +36,11 @@ class XingUser extends Hybrid_User_Contact
      * XINGUser constructor.
      *
      * Create a XING user using with the data coming from the API response
-     * @param  stdClass $oResponse the response coming from XING API request
-     * @param string $xingUserPicureSize the requested size of picture to return
+     * @param  stdClass $apiResponse the response coming from XING API request
+     * @param string $pictureSize requested size of picture to return
      * @throws Exception
      */
-    public function __construct($oResponse, $pictureSize = null)
+    public function __construct($apiResponse, $pictureSize = null)
     {
         foreach (self::$xingUser_xingapi_fields_map as $classFieldName => $apiFieldName) {
             if (!in_array($classFieldName, array_keys(get_object_vars($this)))) {
@@ -60,18 +60,18 @@ class XingUser extends Hybrid_User_Contact
                         $apiFieldNameItemChild = XingUserPicureSize::getImageType( $pictureSize );
                     }
 
-                    if (property_exists($oResponse, $apiFieldNameItemParent)) {
-                        if (($apiFieldNameItemChild === '*') && (count(get_object_vars($oResponse->$apiFieldNameItemParent)) > 0)) {
+                    if (property_exists($apiResponse, $apiFieldNameItemParent)) {
+                        if (($apiFieldNameItemChild === '*') && (count(get_object_vars($apiResponse->$apiFieldNameItemParent)) > 0)) {
                             // anything is valid then
-                            foreach (array_values(get_object_vars($oResponse->$apiFieldNameItemParent)) as $itemChildValue) {
+                            foreach (array_values(get_object_vars($apiResponse->$apiFieldNameItemParent)) as $itemChildValue) {
                                 if ($itemChildValue != null) {
                                     $this->$classFieldName = $itemChildValue;
                                     break;
                                 }
                             }
                         } else {
-                            if (property_exists($oResponse->$apiFieldNameItemParent, $apiFieldNameItemChild)) {
-                                $this->$classFieldName = $oResponse->$apiFieldNameItemParent->$apiFieldNameItemChild;
+                            if (property_exists($apiResponse->$apiFieldNameItemParent, $apiFieldNameItemChild)) {
+                                $this->$classFieldName = $apiResponse->$apiFieldNameItemParent->$apiFieldNameItemChild;
                                 // in case we have multiple elements such as in web_profiles/ , we take the fist match
                                 break;
                             }
@@ -80,7 +80,7 @@ class XingUser extends Hybrid_User_Contact
                 }
             } else {
                 // simple property
-                $this->$classFieldName = $oResponse->$apiFieldName;
+                $this->$classFieldName = $apiResponse->$apiFieldName;
             }
         }
     }
@@ -92,7 +92,6 @@ class XingUser extends Hybrid_User_Contact
         foreach ($xingApiFields as $xingApiField) {
             if (is_array( $xingApiField )) {
                 // nested property
-                //todo change when upgradign to PHP 5.4 with array deferencing
                 $tmp = explode( '/', $xingApiField[ 0 ] );
                 $xingApiField = $tmp[ 0 ];
             }
