@@ -1,3 +1,9 @@
+# XING DECIDED TO DISABLE THEIR PUBLIC API!
+
+Please read https://www.xing.com/communities/posts/important-information-about-xing-public-api-support-1012409468?sc_o=as_g.
+
+<hr>
+
 # HybridAuth provider for the XING.com API
 
 *Tested with HybridAuth 2.1.1-dev and 2.4.0-dev.*
